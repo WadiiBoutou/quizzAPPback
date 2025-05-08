@@ -1,0 +1,65 @@
+//DELETE http://localhost:8080/api/quizzes/6
+
+
+
+
+PUT http://localhost:8080/api/quizzes/4
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ0ZXN0IiwiaWF0IjoxNzQ2NzEwNDg0LCJleHAiOjE3NDY3OTY4ODR9.qnVeHUpnfb7AUtriRWXdYwZrDq_yb7OlvtiYAW7EyVJeDryR1KEYBS66GWTAVyNJADOW9boXyUcDkatnn2OedA
+
+{
+  "title": "Updated Quiz Title",
+  "description": "Updated description",
+  "timeLimit": 45,
+  "questions": [
+    {
+      "text": "Updated question text",
+      "answers": [
+        { "text": "Answer 1", "correct": false },
+        { "text": "Answer 2", "correct": true }
+      ]
+    }
+  ]
+}
+
+
+POST http://localhost:8080/api/auth/register
+Content-Type: application/json
+
+{
+  "username": "test",
+  "password": "123",
+  "firstName": "Test",
+  "lastName": "User",
+  "email": "test@example.com",
+  "role": "teacher"
+}
+POST http://localhost:8080/api/quizzes
+Content-Type: application/json
+
+{
+  "title": "Introduction to Biology",
+  "description": "A quiz about the basics of cell biology.",
+  "timeLimit": 35,
+  "createdBy": null,
+  "questions": [
+    {
+      "text": "What is the powerhouse of the cell?",
+      "answers": [
+        { "text": "Nucleus", "correct": false },
+        { "text": "Mitochondria", "correct": true },
+        { "text": "Ribosome", "correct": false },
+        { "text": "Golgi apparatus", "correct": false }
+      ]
+    },
+    {
+      "text": "What is the basic unit of life?",
+      "answers": [
+        { "text": "Atom", "correct": false },
+        { "text": "Molecule", "correct": false },
+        { "text": "Cell", "correct": true },
+        { "text": "Tissue", "correct": false }
+      ]
+    }
+  ]
+}
