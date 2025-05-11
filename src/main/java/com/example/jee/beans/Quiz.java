@@ -34,7 +34,7 @@ public class Quiz {
     @JsonManagedReference // Prevent infinite recursion
     private List<Question> questions;
 
-    @ManyToMany
+    @ManyToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REMOVE})
     @JoinTable(
         name = "quiz_participants",
         joinColumns = @JoinColumn(name = "quiz_id"),

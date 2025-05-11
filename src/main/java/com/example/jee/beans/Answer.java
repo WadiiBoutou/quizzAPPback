@@ -1,13 +1,17 @@
 package com.example.jee.beans;
 
+import java.util.List;
+
 import com.fasterxml.jackson.annotation.JsonBackReference;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 
 @Entity
 public class Answer {
@@ -20,7 +24,9 @@ public class Answer {
 
 
     private boolean correct;
-
+    
+@OneToMany(mappedBy = "answer", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<UserAnswer> userAnswers;
     @ManyToOne
     @JoinColumn(name = "question_id", nullable = false) // Ensure question_id is not null
     @JsonBackReference // Prevent infinite recursion
