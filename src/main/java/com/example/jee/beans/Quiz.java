@@ -3,6 +3,7 @@ package com.example.jee.beans;
 import java.time.LocalDate;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 import jakarta.persistence.CascadeType;
@@ -35,12 +36,21 @@ public class Quiz {
     private List<Question> questions;
 
     @ManyToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REMOVE})
+    @JsonIgnore // Prevent serialization of participants
     @JoinTable(
         name = "quiz_participants",
         joinColumns = @JoinColumn(name = "quiz_id"),
         inverseJoinColumns = @JoinColumn(name = "user_id")
     )
     private List<User> participants;
+
+    @OneToMany(mappedBy = "quiz", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference // Prevent infinite recursion
+    private List<Participant> participantsDetails;
+
+    @OneToMany(mappedBy = "quiz", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference // Prevent infinite recursion
+    private List<UserAnswer> userAnswers;
 
     @ManyToOne
     @JoinColumn(name = "created_by", nullable = false) // Foreign key column in the Quiz table
@@ -115,6 +125,14 @@ public class Quiz {
         this.questions = questions;
     }
 
+    public User getCreatedBy() {
+        return createdBy;
+    }
+
+    public void setCreatedBy(User createdBy) {
+        this.createdBy = createdBy;
+    }
+
     public List<User> getParticipants() {
         return participants;
     }
@@ -123,12 +141,20 @@ public class Quiz {
         this.participants = participants;
     }
 
-    public User getCreatedBy() {
-        return createdBy;
+    public List<Participant> getParticipantsDetails() {
+        return participantsDetails;
     }
 
-    public void setCreatedBy(User createdBy) {
-        this.createdBy = createdBy;
+    public void setParticipantsDetails(List<Participant> participantsDetails) {
+        this.participantsDetails = participantsDetails;
+    }
+
+    public List<UserAnswer> getUserAnswers() {
+        return userAnswers;
+    }
+
+    public void setUserAnswers(List<UserAnswer> userAnswers) {
+        this.userAnswers = userAnswers;
     }
 
     @Override

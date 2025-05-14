@@ -1,6 +1,8 @@
 package com.example.jee.beans;
 
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -19,7 +21,9 @@ public class UserAnswer {
     private User user;
 
     @ManyToOne
+
     @JoinColumn(name = "quiz_id", nullable = false)
+    @JsonBackReference
     private Quiz quiz;
 
     @ManyToOne

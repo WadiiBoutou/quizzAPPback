@@ -30,6 +30,7 @@ import com.example.jee.repository.ParticipantRepository;
 import com.example.jee.repository.QuizRepository;
 import com.example.jee.repository.UserAnswerRepository;
 import com.example.jee.repository.UserRepository;
+import com.example.jee.service.AIService;
 
 @RestController
 @RequestMapping("/api/quizzes")
@@ -48,6 +49,9 @@ public class QuizController {
 
     @Autowired
     private ParticipantRepository participantRepository;
+
+    @Autowired
+    private AIService aiService;
 
     @PostMapping
     public Quiz createQuiz(@RequestBody Quiz quiz, @AuthenticationPrincipal org.springframework.security.core.userdetails.User currentUser) {
@@ -233,26 +237,130 @@ public class QuizController {
         if (currentUser == null) {
             throw new RuntimeException("User not authenticated");
         }
-    
+
         // Fetch the user from the database
         User user = userRepository.findByUsername(currentUser.getUsername());
         if (user == null) {
             throw new RuntimeException("Authenticated user not found in the database");
         }
-    
+
         // Fetch completed quizzes from the Participant table
         List<Participant> completedQuizzes = participantRepository.findByUser(user);
-    
+
         // Map the results to a response format
         List<Map<String, Object>> response = completedQuizzes.stream().map(participant -> {
             Map<String, Object> map = new HashMap<>();
-            map.put("quizId", participant.getQuiz().getId());
-            map.put("quizTitle", participant.getQuiz().getTitle());
+            Quiz quiz = participant.getQuiz();
+
+            // Calculate the maximum possible score for the quiz
+            int maxScore = quiz.getQuestions().stream()
+                    .mapToInt(Question::getPoints)
+                    .sum();
+
+            map.put("quizId", quiz.getId());
+            map.put("quizTitle", quiz.getTitle());
             map.put("score", participant.getScore());
+            map.put("maxScore", maxScore); // Add maxScore to the response
             map.put("completionTime", participant.getCompletionTime());
             return map;
         }).collect(Collectors.toList());
-    
+
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/{quizId}/performance")
+    public ResponseEntity<?> getQuizPerformance(
+            @PathVariable Long quizId,
+            @AuthenticationPrincipal org.springframework.security.core.userdetails.User currentUser) {
+
+        if (currentUser == null) {
+            throw new RuntimeException("User not authenticated");
+        }
+
+        // Fetch the user from the database
+        User user = userRepository.findByUsername(currentUser.getUsername());
+        if (user == null) {
+            throw new RuntimeException("Authenticated user not found in the database");
+        }
+
+        // Fetch the quiz
+        Quiz quiz = quizRepository.findById(quizId)
+                .orElseThrow(() -> new RuntimeException("Quiz not found"));
+
+        // Fetch the participant record for the user and quiz
+        Participant participant = participantRepository.findByUserAndQuiz(user, quiz);
+              
+        // Fetch the user's answers for the quiz from the UserAnswer table
+        List<UserAnswer> userAnswers = userAnswerRepository.findByUserAndQuiz(user, quiz);
+
+        // Build the response
+        Map<String, Object> response = new HashMap<>();
+        response.put("quizTitle", quiz.getTitle());
+        response.put("score", participant.getScore());
+        response.put("completionTime", participant.getCompletionTime());
+
+        List<Map<String, Object>> questions = quiz.getQuestions().stream().map(question -> {
+            Map<String, Object> questionData = new HashMap<>();
+            questionData.put("text", question.getText());
+            questionData.put("points", question.getPoints());
+
+            // Fetch the correct answers for the question
+            List<String> correctAnswers = question.getAnswers().stream()
+                    .filter(Answer::correct)
+                    .map(Answer::getText)
+                    .collect(Collectors.toList());
+
+            // Fetch the user's answers for this question
+            List<UserAnswer> userAnswersForQuestion = userAnswers.stream()
+                    .filter(ua -> ua.getQuestion().getId().equals(question.getId()))
+                    .collect(Collectors.toList());
+
+            // Extract the user's answers as text
+            List<String> userAnswerTexts = userAnswersForQuestion.stream()
+                    .map(ua -> ua.getAnswer().getText())
+                    .collect(Collectors.toList());
+
+            // Determine if the user's answers are fully correct
+            boolean isCorrect = correctAnswers.size() == userAnswerTexts.size()
+                    && correctAnswers.containsAll(userAnswerTexts);
+
+            questionData.put("userAnswers", userAnswerTexts);
+            questionData.put("correctAnswers", correctAnswers);
+            questionData.put("isCorrect", isCorrect);
+
+            return questionData;
+        }).collect(Collectors.toList());
+
+        response.put("questions", questions);
+
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/generate-ai-quiz")
+    public ResponseEntity<?> generateAIQuiz(
+            @RequestBody Map<String, Object> request,
+            @AuthenticationPrincipal org.springframework.security.core.userdetails.User currentUser) {
+
+        if (currentUser == null) {
+            throw new RuntimeException("User not authenticated");
+        }
+
+        // Extract user input from the request
+        String prompt = (String) request.get("prompt");
+        int numberOfQuestions = (int) request.get("numberOfQuestions");
+        int timeLimit = (int) request.get("timeLimit");
+        boolean singleCorrectAnswer = (boolean) request.get("singleCorrectAnswer");
+
+        // Call the AI service to generate quiz content
+        Map<String, Object> aiResponse = aiService.generateQuiz(prompt, numberOfQuestions, singleCorrectAnswer);
+
+        // Build the response
+        Map<String, Object> response = new HashMap<>();
+        response.put("title", aiResponse.get("title"));
+        response.put("description", aiResponse.get("description"));
+        response.put("timeLimit", timeLimit);
+        response.put("questions", aiResponse.get("questions"));
+
         return ResponseEntity.ok(response);
     }
 }
