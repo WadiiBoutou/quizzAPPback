@@ -1,0 +1,26 @@
+name: Backend CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up JDK 21
+        uses: actions/setup-java@v3
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+      - name: Build and test with Maven
+        working-directory: ./jee
+        run: mvn clean test
+      - name: Upload backend test results
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-test-results
+          path: jee/target/surefire-reports/
