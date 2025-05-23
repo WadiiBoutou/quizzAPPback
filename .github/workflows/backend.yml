@@ -17,10 +17,9 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
       - name: Build and test with Maven
-        working-directory: ./jee
         run: mvn clean test
       - name: Upload backend test results
         uses: actions/upload-artifact@v4
         with:
           name: backend-test-results
-          path: jee/target/surefire-reports/
+          path: target/surefire-reports/
