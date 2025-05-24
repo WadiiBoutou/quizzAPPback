@@ -1,0 +1,36 @@
+name: Backend CD
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production 
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Pull existing Docker images
+        run: |
+          docker pull wadiiboutou/quizzapp-backend:latest || echo "No existing backend image"
+
+      - name: Set up Docker Compose
+        uses: redcoolbeans/docker-compose-github-actions@v1
+        with:
+          run: docker-compose -f docker-compose.yml up -d --build
+
+      - name: Show running containers
+        run: docker ps
