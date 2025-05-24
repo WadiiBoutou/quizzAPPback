@@ -1,4 +1,4 @@
-name: Backend CD
+name: Continuous Deployment (CD)
 
 on:
   push:
@@ -8,7 +8,7 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment: production 
+    environment: production
 
     steps:
       - name: Checkout code
@@ -23,14 +23,14 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Pull existing Docker images
-        run: |
-          docker pull wadiiboutou/quizzapp-backend:latest || echo "No existing backend image"
-
       - name: Set up Docker Compose
-        uses: redcoolbeans/docker-compose-github-actions@v1
+        uses: docker/compose-action@v2
         with:
-          run: docker-compose -f docker-compose.yml up -d --build
+          files: docker-compose.yml
+          context: ./
+          composeFlags: --project-name quizzapp
 
-      - name: Show running containers
-        run: docker ps
+      - name: Deploy services
+        run: |
+          docker-compose pull || echo "No existing images to pull"
+          docker-compose up -d --build
