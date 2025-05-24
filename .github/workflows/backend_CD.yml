@@ -23,14 +23,20 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Set up Docker Compose
-        uses: docker/compose-action@v2
-        with:
-          files: docker-compose.yml
-          context: ./
-          composeFlags: --project-name quizzapp
-
-      - name: Deploy services
+      - name: Install Docker Compose
         run: |
-          docker-compose pull || echo "No existing images to pull"
-          docker-compose up -d --build
+          DOCKER_CONFIG=${DOCKER_CONFIG:-$HOME/.docker}
+          mkdir -p $DOCKER_CONFIG/cli-plugins
+          curl -SL https://github.com/docker/compose/releases/download/v2.26.0/docker-compose-linux-x86_64  -o $DOCKER_CONFIG/cli-plugins/docker-compose
+          chmod +x $DOCKER_CONFIG/cli-plugins/docker-compose
+          docker compose version
+
+      - name: Deploy services with Docker Compose
+        env:
+          SPRING_DATASOURCE_URL: jdbc:mysql://database:3306/quizzapp
+          SPRING_DATASOURCE_USERNAME: root
+          SPRING_DATASOURCE_PASSWORD: root
+          SPRING_JPA_HIBERNATE_DDL_AUTO: update
+        run: |
+          docker-compose -f docker-compose.yml pull || echo "No images to pull"
+          docker-compose -f docker-compose.yml up -d --build
